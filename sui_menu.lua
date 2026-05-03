@@ -32,26 +32,30 @@ local Bottombar = require("sui_bottombar")
 
 return function(SimpleUIPlugin)
 
--- Register the plugin icon into KOReader's icon cache once per installer call
--- Register the plugin icon into KOReader's icon system once per installer call.
--- (guarded by a nil-check so it is a no-op on subsequent reloads within the
--- same session).
--- Moved here from module-level so it only runs when the menu is first opened,
--- not at plugin startup.
+-- Secondary icon registration: runs when sui_menu is first loaded (lazy fallback).
+-- The primary registration happens eagerly in main.lua:init() with absolute-path
+-- resolution and DataStorage copy.  This block is kept as a belt-and-suspenders
+-- fallback for cases where sui_menu is loaded without a prior main.lua init
+-- (e.g. unit tests, or future refactoring).
 --
--- Three-layer strategy for maximum device compatibility:
---   1. Inject directly into ICONS_PATH (the resolved-path cache) via upvalue.
---      Fastest; works on all standard KOReader builds.
---   2. Inject the plugin's icons/ directory into ICONS_DIRS (the search-path
---      list) via upvalue.  Lets IconWidget auto-discover the file even if
---      ICONS_PATH injection fails (e.g. different Lua upvalue ordering).
---   3. If both upvalue approaches fail (hardened/sandboxed builds), fall back
---      to creating a minimal sub-class of IconWidget whose :init() sets
---      self.file directly when self.icon == "simpleui_settings".
---      This never touches private upvalues at all.
+-- Fixes vs. the original three-strategy approach:
+--   * plugin_root is resolved to an absolute path via lfs.currentdir() when
+--     debug.getinfo returns a relative source path (happens on some devices).
+--   * ICONS_PATH and ICONS_DIRS are collected in a SINGLE upvalue scan instead
+--     of two sequential loops, matching the Zen UI implementation.
+--   * Strategy 3 (iw.init patch) is retained for hardened builds where upvalue
+--     access is unavailable.
 do
     local src = debug.getinfo(1, "S").source or ""
     local plugin_root = (src:sub(1,1) == "@") and src:sub(2):match("^(.*)/[^/]+$") or nil
+    -- Resolve relative paths to absolute (fix for devices where debug.getinfo
+    -- returns e.g. "plugins/simpleui.koplugin/sui_menu.lua" instead of an
+    -- absolute path).
+    if plugin_root and plugin_root:sub(1, 1) ~= "/" then
+        local ok_lfs2, lfs2 = pcall(require, "libs/libkoreader-lfs")
+        local cwd = ok_lfs2 and lfs2 and lfs2.currentdir()
+        if cwd then plugin_root = cwd .. "/" .. plugin_root end
+    end
     if plugin_root then
         local lfs_ok, lfs = pcall(require, "libs/libkoreader-lfs")
         local iw_ok,  iw  = pcall(require, "ui/widget/iconwidget")
@@ -59,60 +63,45 @@ do
             local icon_file = plugin_root .. "/icons/settings.svg"
             local icon_exists = lfs.attributes(icon_file, "mode") == "file"
 
-            -- Resolve the real :init function (may be inherited via metatable,
-            -- so we walk the chain rather than using rawget alone).
-            local iw_init = nil
-            do
-                local t = iw
-                while t and not iw_init do
-                    local f = rawget(t, "init")
-                    if type(f) == "function" then iw_init = f end
-                    local mt = getmetatable(t)
-                    t = mt and rawget(mt, "__index")
-                end
-            end
+            local iw_init = rawget(iw, "init")
 
             local injected_path = false
             local injected_dir  = false
 
             if type(iw_init) == "function" then
-                -- Strategy 1: inject into ICONS_PATH cache.
-                for i = 1, 128 do
+                -- Single scan: collect both ICONS_PATH and ICONS_DIRS together.
+                local icons_path, icons_dirs
+                for i = 1, 64 do
                     local uname, uval = debug.getupvalue(iw_init, i)
                     if uname == nil then break end
                     if uname == "ICONS_PATH" and type(uval) == "table" then
-                        if not uval["simpleui_settings"] and icon_exists then
-                            uval["simpleui_settings"] = icon_file
-                        end
-                        injected_path = true
-                        break
+                        icons_path = uval
+                    elseif uname == "ICONS_DIRS" and type(uval) == "table" then
+                        icons_dirs = uval
                     end
+                    if icons_path and icons_dirs then break end
                 end
-                -- Strategy 2: inject our icons/ dir into ICONS_DIRS so that
-                -- IconWidget's own search loop finds the file automatically.
-                -- This also covers future icons added to the plugin.
-                if not injected_path or not icon_exists then
-                    for i = 1, 128 do
-                        local uname, uval = debug.getupvalue(iw_init, i)
-                        if uname == nil then break end
-                        if uname == "ICONS_DIRS" and type(uval) == "table" then
-                            -- Only add if not already present.
-                            local already = false
-                            for _, d in ipairs(uval) do
-                                if d == plugin_root .. "/icons" then already = true; break end
-                            end
-                            if not already then
-                                table.insert(uval, 1, plugin_root .. "/icons")
-                            end
-                            injected_dir = true
-                            break
-                        end
+                if icons_path then
+                    if icon_exists and not icons_path["simpleui_settings"] then
+                        icons_path["simpleui_settings"] = icon_file
                     end
+                    injected_path = true
+                end
+                if icons_dirs then
+                    local icons_subdir = plugin_root .. "/icons"
+                    local already = false
+                    for _, d in ipairs(icons_dirs) do
+                        if d == icons_subdir then already = true; break end
+                    end
+                    if not already then
+                        table.insert(icons_dirs, 1, icons_subdir)
+                    end
+                    injected_dir = true
                 end
             end
 
-            -- Strategy 3: if neither upvalue approach worked, patch IconWidget
-            -- so that icon="simpleui_settings" resolves to our file directly.
+            -- Strategy 3: if upvalue injection was unavailable (hardened builds),
+            -- patch IconWidget.init so icon="simpleui_settings" resolves directly.
             if not injected_path and not injected_dir and icon_exists then
                 local orig_init = iw.init
                 iw.init = function(self_iw)
