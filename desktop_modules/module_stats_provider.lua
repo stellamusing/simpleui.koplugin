@@ -18,7 +18,7 @@
 --   Query 1 — one pass over page_stat_data:
 --     • today_secs, today_pages   (start_time >= start_today)
 --     • avg_secs, avg_pages       (7-day window, grouped by date)
---     • month_secs                (start_time >= month_start)
+--     • month_secs, month_pages   (start_time >= month_start)
 --     • year_secs                 (start_time >= year_start)
 --     • total_secs                (full table)
 --   Query 2 — streak recursive CTE (structurally different; must be separate)
@@ -58,6 +58,11 @@ end
 local function startOfToday(t)
     -- t is os.date("*t") — already computed by the caller
     return os.time() - (t.hour * 3600 + t.min * 60 + t.sec)
+end
+
+-- Computes the unix timestamp of 00:00:00 on the 1st of the current month.
+local function startOfMonth(t)
+    return os.time{ year = t.year, t.month, day = 1, hour = 0, min = 0, sec = 0 }
 end
 
 -- Computes the unix timestamp of 00:00:00 on January 1 of the current year.
