@@ -387,7 +387,7 @@ end
 -- Dialog: set the monthly reading goal in hours
 local function showMonthlySettingsDialog(on_confirm)
     local SpinWidget  = require("ui/widget/spinwidget")
-    local cur_hours = math.floor(getDailyGoalSecs() / 3600)
+    local cur_hours = math.floor(getMonthlyGoalSecs() / 3600)
     UIManager:show(SpinWidget:new{
         title_text  = _("Monthly Reading Goal"),
         info_text   = _("Hours per month:"),
@@ -556,7 +556,7 @@ function M.build(w, ctx)
         if show_mon then
             local lbl_w = _measureLblW({ month_str }, cd.face_row, cd.lbl_w)
             rows[#rows+1] = buildCompactGoalRow(
-                inner_w, lbl_w, pct_w, month_str, ann_pct, ann_pct_str, ann_detail,
+                inner_w, lbl_w, pct_w, month_str, mon_pct, ann_pct_str, mon_detail,
                 function() showMonthlySettingsDialog() end, cd)
         if (show_ann or show_mon) and show_day then
             rows[#rows+1] = VerticalSpan:new{ width = cd.row_gap }
@@ -709,7 +709,7 @@ function M.getMenuItems(ctx_menu)
               else              return string.format(_lc("  Set Goal  (%d hr/month)"), m) end
           end,
           keep_menu_open = true,
-          callback = function() showDailySettingsDialog(refresh) end },
+          callback = function() showMonthlySettingsDialog(refresh) end },
         { text         = _lc("Daily Goal"),
           checked_func = function() return showDaily() end,
           keep_menu_open = true,
