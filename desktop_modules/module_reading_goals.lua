@@ -90,10 +90,10 @@ local function showAnnual()   return G_reader_settings:readSetting(SHOW_ANNUAL) 
 local function showMonthly()  return G_reader_settings:readSetting(SHOW_MONTHLY) ~= false end
 local function showDaily()    return G_reader_settings:readSetting(SHOW_DAILY)  ~= false end
 
-local function getAnnualGoal()     return G_reader_settings:readSetting("navbar_reading_goal") or 0 end
-local function getAnnualPhysical() return G_reader_settings:readSetting("navbar_reading_goal_physical") or 0 end
+local function getAnnualGoal()      return G_reader_settings:readSetting("navbar_reading_goal") or 0 end
+local function getAnnualPhysical()  return G_reader_settings:readSetting("navbar_reading_goal_physical") or 0 end
 local function getMonthlyGoalSecs() return G_reader_settings:readSetting("navbar_monthly_reading_goal_secs") or 0 end
-local function getDailyGoalSecs()  return G_reader_settings:readSetting("navbar_daily_reading_goal_secs") or 0 end
+local function getDailyGoalSecs()   return G_reader_settings:readSetting("navbar_daily_reading_goal_secs") or 0 end
 
 -- Formats seconds as "Xh Ym" / "Xh" / "Ym"
 local function formatDuration(secs)
@@ -454,7 +454,7 @@ local function _monthlyData(month_secs)
     local pct, pct_str
     if m_goal_secs > 0 then
         pct     = month_secs / m_goal_secs
-        pct_str = string.format("%d%%", math.floor(pct * 100))
+        pct_str = _pctStr(pct)
     else
         pct     = 1.0
         pct_str = ""
@@ -491,10 +491,10 @@ M.label       = _("Reading Goals")
 M.enabled_key = "reading_goals"
 M.default_on  = true
 
-M.showAnnualGoalDialog     = showAnnualGoalDialog
-M.showAnnualPhysicalDialog = showAnnualPhysicalDialog
+M.showAnnualGoalDialog      = showAnnualGoalDialog
+M.showAnnualPhysicalDialog  = showAnnualPhysicalDialog
 M.showMonthlySettingsDialog = showMonthlySettingsDialog
-M.showDailySettingsDialog  = showDailySettingsDialog
+M.showDailySettingsDialog   = showDailySettingsDialog
 
 -- Delegate cache invalidation to StatsProvider (shared with reading_stats).
 function M.invalidateCache()
