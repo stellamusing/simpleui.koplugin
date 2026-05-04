@@ -63,7 +63,7 @@ end
 
 -- Computes the unix timestamp of 00:00:00 on the 1st of the current month.
 local function startOfMonth(t)
-    return os.time{ year = t.year, t.month, day = 1, hour = 0, min = 0, sec = 0 }
+    return os.time{ year = t.year, month = t.month, day = 1, hour = 0, min = 0, sec = 0 }
 end
 
 -- Computes the unix timestamp of 00:00:00 on January 1 of the current year.
@@ -347,7 +347,7 @@ function SP.get(db_conn, year_str)
     -- Compute timestamps once — shared by all sub-queries.
     local start_today = os.time() - (t.hour * 3600 + t.min * 60 + t.sec)
     local week_start  = start_today - 6 * 86400
-    local month_start = os.time{ year = t.year, t.month, day = 1,
+    local month_start = os.time{ year = t.year, month = t.month, day = 1,
                                   hour = 0,     min  = 0,  sec = 0 }
     local year_start  = os.time{ year = t.year, month = 1, day = 1,
                                   hour = 0,     min  = 0,  sec = 0 }

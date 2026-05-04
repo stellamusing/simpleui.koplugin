@@ -452,7 +452,7 @@ local function _monthlyData(month_secs)
         pct     = 1.0
         pct_str = ""
     end
-    local detail = (goal_secs <= 0)
+    local detail = (m_goal_secs <= 0)
         and string.format(_("%s read"), formatDuration(month_secs))
         or  string.format("%s/%s", formatDuration(month_secs), formatDuration(m_goal_secs))
     return pct, pct_str, detail
@@ -613,6 +613,7 @@ function M.build(w, ctx)
         padding_left  = PAD, padding_right = PAD,
         rows,
     }
+    end
 end
 
 -- Returns the pixel height of the module including the section label
