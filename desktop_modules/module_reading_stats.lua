@@ -310,7 +310,7 @@ function M.build(w, ctx)
         avg_pages   = sp.avg_pages   or 0,
         month_secs  = sp.month_secs  or 0,
         month_pages = sp.month_pages or 0,
-        year_time   = sp.year_secs   or 0,
+        year_secs   = sp.year_secs   or 0,
         total_secs  = sp.total_secs  or 0,
         total_books = sp.books_total or 0,
         streak      = sp.streak      or 0,

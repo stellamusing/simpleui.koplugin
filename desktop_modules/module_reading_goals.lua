@@ -541,7 +541,7 @@ function M.build(w, ctx)
         -- Measure pct column width from both rows so they share the same width.
         local pct_strs = {}
         if show_ann and ann_pct_str ~= "" then pct_strs[#pct_strs+1] = ann_pct_str end
-        if show_mon and mon_pct_str ~= "" then pct_strs[#pct_strs+1] = day_pct_str end
+        if show_mon and mon_pct_str ~= "" then pct_strs[#pct_strs+1] = mon_pct_str end
         if show_day and day_pct_str ~= "" then pct_strs[#pct_strs+1] = day_pct_str end
         local pct_w = _measureLblW(pct_strs, cd.face_row, Screen:scaleBySize(28))
         if show_ann then
@@ -556,8 +556,9 @@ function M.build(w, ctx)
         if show_mon then
             local lbl_w = _measureLblW({ month_str }, cd.face_row, cd.lbl_w)
             rows[#rows+1] = buildCompactGoalRow(
-                inner_w, lbl_w, pct_w, month_str, mon_pct, ann_pct_str, mon_detail,
+                inner_w, lbl_w, pct_w, month_str, mon_pct, mon_pct_str, mon_detail,
                 function() showMonthlySettingsDialog() end, cd)
+        end
         if (show_ann or show_mon) and show_day then
             rows[#rows+1] = VerticalSpan:new{ width = cd.row_gap }
         end
@@ -613,7 +614,6 @@ function M.build(w, ctx)
         padding_left  = PAD, padding_right = PAD,
         rows,
     }
-    end
 end
 
 -- Returns the pixel height of the module including the section label
